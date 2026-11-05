@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Environment Variables & Secrets
+.env
+.env*.local
+
+# Node & Build Outputs
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Scratch & test output files
+api_test_output.txt
+bengaluru_hoblis_update.txt
+map_translations_addition.txt
+package-lock.json
+
+# Large presentations (>100MB exceeds GitHub limits)
+*.pptx

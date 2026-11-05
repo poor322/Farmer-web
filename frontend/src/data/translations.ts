@@ -70,11 +70,12 @@ export const weatherTranslations: Record<string, { en: string; kn: string }> = {
 
 export const uiTranslations: Record<string, { en: string; kn: string }> = {
     // Header & Brand
-    portalTitle: { en: 'Farmer Portal', kn: 'ರೈತ ಮಿತ್ರ ಪೋರ್ಟಲ್' },
-    portalSubtitle: { en: 'Karnataka State Farmers AI Agricultural Portal', kn: 'ಕರ್ನಾಟಕ ರಾಜ್ಯ ರೈತರ ಎಐ ಕೃಷಿ ಮಾಹಿತಿ ಪೋರ್ಟಲ್' },
+    portalTitle: { en: 'Raitha Mitra — Karnataka Agricultural Portal', kn: 'ರೈತ ಮಿತ್ರ — ಕರ್ನಾಟಕ ಕೃಷಿ ಮಾಹಿತಿ ಪೋರ್ಟಲ್' },
+    portalSubtitle: { en: 'Department of Agriculture & Agricultural Marketing (KSDA & KSAMB)', kn: 'ಕೃಷಿ ಇಲಾಖೆ ಮತ್ತು ಕರ್ನಾಟಕ ರಾಜ್ಯ ಕೃಷಿ ಮಾರಾಟ ಮಂಡಳಿ (ಕರ್ನಾಟಕ ಸರ್ಕಾರ)' },
     welcomeUser: { en: 'Welcome,', kn: 'ಸ್ವಾಗತ,' },
     surveyNo: { en: 'Survey No:', kn: 'ಸರ್ವೇ ಸಂಖ್ಯೆ:' },
-    aadhaarNo: { en: 'Aadhaar:', kn: 'ಆಧಾರ್:' },
+    phoneNo: { en: 'Phone:', kn: 'ಮೊಬೈಲ್:' },
+    currentCrop: { en: 'Current Crop:', kn: 'ಪ್ರಸ್ತುತ ಬೆಳೆ:' },
     registeredLand: { en: 'Registered Land:', kn: 'ನೋಂದಾಯಿತ ಜಮೀನು:' },
     acres: { en: 'Acres', kn: 'ಎಕರೆ' },
     guntas: { en: 'Guntas', kn: 'ಗುಂಟೆ' },
@@ -86,7 +87,7 @@ export const uiTranslations: Record<string, { en: string; kn: string }> = {
     login: { en: 'Login', kn: 'ಲಾಗಿನ್' },
     register: { en: 'Register', kn: 'ನೋಂದಣಿ' },
     welcomeBack: { en: 'Welcome Back', kn: 'ಮರಳಿ ಸ್ವಾಗತ' },
-    loginSubtitle: { en: 'Enter your details to access your farm dashboard', kn: 'ನಿಮ್ಮ ಹೊಲದ ಮಾಹಿತಿಗೆ ಲಾಗಿನ್ ಆಗಿ' },
+    loginSubtitle: { en: 'Enter your credentials to access your verified farm dashboard', kn: 'ದೃಢೀಕರಿಸಿದ ಕೃಷಿ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗಾಗಿ ಲಾಗಿನ್ ಆಗಿ' },
     fullName: { en: 'Full Name', kn: 'ಪೂರ್ಣ ಹೆಸರು' },
     enterFullName: { en: 'Enter your full name', kn: 'ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರು ನಮೂದಿಸಿ' },
     password: { en: 'Password', kn: 'ಪಾಸ್‌ವರ್ಡ್' },
@@ -94,10 +95,11 @@ export const uiTranslations: Record<string, { en: string; kn: string }> = {
     loginBtn: { en: 'Login to Dashboard', kn: 'ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಲಾಗಿನ್ ಆಗಿ' },
     
     // Registration Form
-    joinCommunity: { en: 'Join Karnataka Farmer Community', kn: 'ಕರ್ನಾಟಕ ರೈತ ಸಮುದಾಯಕ್ಕೆ ಸೇರಿ' },
-    registerSubtitle: { en: 'AI-powered crop recommendations & market insights for your land', kn: 'ನಿಮ್ಮ ಜಮೀನಿಗೆ ಎಐ ಬೆಳೆ ಶಿಫಾರಸು ಮತ್ತು ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿ' },
+    joinCommunity: { en: 'Karnataka State Farmers Portal Registration', kn: 'ಕರ್ನಾಟಕ ರಾಜ್ಯ ರೈತರ ಅಧಿಕೃತ ನೋಂದಣಿ' },
+    registerSubtitle: { en: 'Scientific crop suitability, certified cultivars & real-time APMC market intelligence', kn: 'ವೈಜ್ಞಾನಿಕ ಬೆಳೆ ಶಿಫಾರಸು, ಪ್ರಮಾಣೀಕೃತ ತಳಿಗಳು ಮತ್ತು ನೈಜ ಸಮಯದ ಮಾರುಕಟ್ಟೆ ಮಾಹಿತಿ' },
     surveyNumber: { en: 'Survey Number', kn: 'ಸರ್ವೇ ಸಂಖ್ಯೆ' },
-    aadhaarNumber: { en: 'Aadhaar Number', kn: 'ಆಧಾರ್ ಸಂಖ್ಯೆ' },
+    currentCropGrown: { en: 'Currently Grown Crop', kn: 'ಪ್ರಸ್ತುತ ಬೆಳೆಯುತ್ತಿರುವ ಬೆಳೆ' },
+    selectCurrentCrop: { en: 'Select your current crop', kn: 'ಪ್ರಸ್ತುತ ಬೆಳೆಯುತ್ತಿರುವ ಬೆಳೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ' },
     phoneNumber: { en: 'Phone Number', kn: 'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ' },
     autoDetectGPS: { en: 'Auto-Detect Location (GPS)', kn: 'ಜಿಪಿಎಸ್ ಮೂಲಕ ಸ್ವಯಂಚಾಲಿತ ಸ್ಥಳ ಪತ್ತೆ' },
     detectingLoc: { en: 'Detecting location...', kn: 'ಸ್ಥಳ ಪತ್ತೆಮಾಡಲಾಗುತ್ತಿದೆ...' },
@@ -119,13 +121,14 @@ export const uiTranslations: Record<string, { en: string; kn: string }> = {
     tabMarketPrices: { en: '💰 Market Rates', kn: '💰 ಮಾರುಕಟ್ಟೆ ದರಗಳು' },
     tabNeighbours: { en: '🏘️ Neighbours', kn: '🏘️ ನೆರೆಹೊರೆಯವರು' },
     tabFarmAnalysis: { en: '📊 My Farm Analysis', kn: '📊 ನನ್ನ ಹೊಲದ ವಿಶ್ಲೇಷಣೆ' },
+    tabAlerts: { en: '📲 APMC Market Alerts', kn: '📲 ಮಾರುಕಟ್ಟೆ ಎಚ್ಚರಿಕೆಗಳು (WhatsApp & SMS)' },
+    marketAlertsBtn: { en: 'Daily Price Alerts', kn: 'ದೈನಂದಿನ ದರ ಎಚ್ಚರಿಕೆ' },
 
-    // Crop Recommendation Section
     currentlyGrowing: { en: '🌿 Currently Growing on Your Land', kn: '🌿 ನಿಮ್ಮ ಜಮೀನಿನಲ್ಲಿ ಪ್ರಸ್ತುತ ಬೆಳೆಯುತ್ತಿರುವ ಬೆಳೆ' },
     noCropsGrowing: { en: 'No crops are currently growing on your land', kn: 'ನಿಮ್ಮ ಜಮೀನಿನಲ್ಲಿ ಪ್ರಸ್ತುತ ಯಾವುದೇ ಬೆಳೆ ಬೆಳೆಯುತ್ತಿಲ್ಲ' },
     activeCrop: { en: 'Active Crop', kn: 'ಪ್ರಸ್ತುತ ಬೆಳೆ' },
-    aiRecommended: { en: '🤖 AI Recommended Crops', kn: '🤖 ಎಐ ಶಿಫಾರಸು ಮಾಡಿದ ಬೆಳೆಗಳು' },
-    cropRecTitle: { en: '🌱 Crop Recommendation for Your Land', kn: '🌱 ನಿಮ್ಮ ಜಮೀನಿಗೆ ಸೂಕ್ತವಾದ ಬೆಳೆ ಶಿಫಾರಸು' },
+    aiRecommended: { en: '🌾 Agronomic Crop Recommendations', kn: '🌾 ಕೃಷಿ ಇಲಾಖೆ ಶಿಫಾರಸು ಮಾಡಿದ ಬೆಳೆಗಳು' },
+    cropRecTitle: { en: '🌱 Scientific Crop Advisory for Your Land', kn: '🌱 ನಿಮ್ಮ ಜಮೀನಿಗೆ ಸೂಕ್ತವಾದ ವೈಜ್ಞಾನಿಕ ಬೆಳೆ ಶಿಫಾರಸು' },
     liveWeather: { en: '🌤️ Live Weather & Climate', kn: '🌤️ ಪ್ರಸ್ತುತ ಹವಾಮಾನ ಮಾಹಿತಿ' },
     refresh: { en: 'Refresh', kn: 'ನವೀಕರಿಸಿ' },
     temperature: { en: 'Temperature', kn: 'ತಾಪಮಾನ' },
@@ -285,7 +288,32 @@ export const uiTranslations: Record<string, { en: string; kn: string }> = {
     closeModal: { en: 'Close', kn: 'ಮುಚ್ಚಿ' },
     bestRegionsLabel: { en: 'Adapted Districts', kn: 'ಹೊಂದಿಕೊಳ್ಳುವ ಜಿಲ್ಲೆಗಳು' },
     matchReasonsLabel: { en: 'Agronomic Fit', kn: 'ಕೃಷಿ ಸೂಕ್ತತೆ' },
-    modalTitle: { en: 'Crop Varieties & Cultivars', kn: 'ಬೆಳೆ ತಳಿಗಳು ಮತ್ತು ಪ್ರಭೇದಗಳು' }
+    modalTitle: { en: 'Crop Varieties & Cultivars', kn: 'ಬೆಳೆ ತಳಿಗಳು ಮತ್ತು ಪ್ರಭೇದಗಳು' },
+
+    // WhatsApp & SMS Alerts Section
+    alertsHeroTitle: { en: 'Daily APMC Mandi Price Alerts via WhatsApp & SMS', kn: 'ವಾಟ್ಸಾಪ್ ಮತ್ತು ಎಸ್‌ಎಂಎಸ್ ಮೂಲಕ ದಿನನಿತ್ಯದ ಎಪಿಎಂಸಿ ದರ ಎಚ್ಚರಿಕೆ' },
+    alertsHeroDesc: { en: 'Receive authentic live modal rates, price surge spikes, and harvest marketing advice directly sent to your registered mobile number.', kn: 'ನಿಮ್ಮ ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಗೆ ಪ್ರತಿದಿನ ಬೆಳಿಗ್ಗೆ ಎಪಿಎಂಸಿ ಮಾರುಕಟ್ಟೆ ದರಗಳು, ಬೆಲೆ ಏರಿಕೆ ಮಾಹಿತಿ ಮತ್ತು ಮಾರಾಟ ಸಲಹೆಗಳನ್ನು ನೇರವಾಗಿ ಪಡೆಯಿರಿ.' },
+    registeredMobile: { en: 'Registered Phone Number', kn: 'ನೋಂದಾಯಿತ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ' },
+    currentlyTrackingCrop: { en: 'Monitored Crop', kn: 'ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡಲಾಗುತ್ತಿರುವ ಬೆಳೆ' },
+    mandiCenter: { en: 'Primary APMC Yard', kn: 'ಮುಖ್ಯ ಎಪಿಎಂಸಿ ಮಾರುಕಟ್ಟೆ' },
+    channelPreferences: { en: 'Notification Channels', kn: 'ಮಾಹಿತಿ ಸ್ವೀಕರಿಸುವ ಮಾಧ್ಯಮ' },
+    whatsappChannel: { en: 'WhatsApp Daily Bulletin (7:00 AM)', kn: 'ವಾಟ್ಸಾಪ್ ದೈನಂದಿನ ವರದಿ (ಬೆಳಿಗ್ಗೆ ೭:೦೦)' },
+    smsChannel: { en: 'High Price Surge Alerts via SMS', kn: 'ತ್ವರಿತ ಬೆಲೆ ಏರಿಕೆ SMS ಎಚ್ಚರಿಕೆ' },
+    sendTestAlert: { en: '🚀 Send Test Alert to Phone', kn: '🚀 ಪರೀಕ್ಷಾರ್ಥ ಎಚ್ಚರಿಕೆಯನ್ನು ಕಳುಹಿಸಿ' },
+    sendingAlert: { en: 'Transmitting via Telecom Gateway...', kn: 'ಟೆಲಿಕಾಂ ಗೇಟ್‌ವೇ ಮೂಲಕ ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ...' },
+    shareToWhatsapp: { en: 'Open in WhatsApp', kn: 'ವಾಟ್ಸಾಪ್‌ನಲ್ಲಿ ತೆರೆಯಿರಿ' },
+    copyAlertText: { en: 'Copy Message', kn: 'ಸಂದೇಶ ನಕಲಿಸಿ' },
+    copied: { en: 'Copied to Clipboard!', kn: 'ನಕಲಿಸಲಾಗಿದೆ!' },
+    deliverySimulatedSuccess: { en: 'Alert Dispatched Successfully! Delivered via Official Carrier Hub', kn: 'ಎಚ್ಚರಿಕೆಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಕಳುಹಿಸಲಾಗಿದೆ! ಟೆಲಿಕಾಂ ಗೇಟ್‌ವೇ ಮೂಲಕ ತಲುಪಿದೆ' },
+    frequencyDaily: { en: 'Daily Morning (7:00 AM)', kn: 'ಪ್ರತಿದಿನ ಬೆಳಿಗ್ಗೆ (೭:೦೦)' },
+    frequencySurge: { en: 'Price Surge Spike Only (+3%)', kn: 'ಬೆಲೆ ಏರಿಕೆಯಾದಾಗ ಮಾತ್ರ (+೩%)' },
+    frequencyWeekly: { en: 'Weekly Market Digest', kn: 'ವಾರಕ್ಕೊಮ್ಮೆ ಸಾರಾಂಶ' },
+    alertTypeDaily: { en: 'Daily Mandi Opening Rate', kn: 'ದೈನಂದಿನ ಮಾರುಕಟ್ಟೆ ಆರಂಭಿಕ ದರ' },
+    alertTypeSurge: { en: 'High Price Surge Spike Alert', kn: 'ಗರಿಷ್ಠ ಬೆಲೆ ಏರಿಕೆ ಎಚ್ಚರಿಕೆ' },
+    alertTypeSelling: { en: 'Harvest Window Selling Advisory', kn: 'ಸುಗ್ಗಿ ಮಾರಾಟದ ಸೂಕ್ತ ಸಮಯ ಸಲಹೆ' },
+    savePreferences: { en: 'Save Notification Preferences', kn: 'ಮಾಹಿತಿ ಆಯ್ಕೆಗಳನ್ನು ಉಳಿಸಿ' },
+    preferencesSaved: { en: 'Preferences Saved Successfully!', kn: 'ಆಯ್ಕೆಗಳನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಉಳಿಸಲಾಗಿದೆ!' },
+    liveSimulatedBadge: { en: 'Official APMC Gateway Simulation', kn: 'ಅಧಿಕೃತ ಎಪಿಎಂಸಿ ಗೇಟ್‌ವೇ ಸಿಮ್ಯುಲೇಶನ್' }
 };
 
 export const getCropName = (crop: string, lang: Language): string => {

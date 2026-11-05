@@ -54,52 +54,137 @@
     "market_prices": [
         {
             "crop": "Rice",
-            "price": "₹2200/quintal",
+            "price": "\u20b92200/quintal",
             "trend": "up"
         },
         {
             "crop": "Wheat",
-            "price": "₹2500/quintal",
+            "price": "\u20b92500/quintal",
             "trend": "down"
         },
         {
             "crop": "Sugarcane",
-            "price": "₹3100/quintal",
+            "price": "\u20b93100/quintal",
             "trend": "up"
         },
         {
             "crop": "Cotton",
-            "price": "₹6000/quintal",
+            "price": "\u20b96000/quintal",
             "trend": "stable"
         },
         {
             "crop": "Banana",
-            "price": "₹40/kg",
+            "price": "\u20b940/kg",
             "trend": "up"
         },
         {
             "crop": "Arecanut",
-            "price": "₹45000/quintal",
+            "price": "\u20b945000/quintal",
             "trend": "up"
         },
         {
             "crop": "Pepper",
-            "price": "₹600/kg",
+            "price": "\u20b9600/kg",
             "trend": "stable"
         },
         {
             "crop": "Cashew",
-            "price": "₹120/kg",
+            "price": "\u20b9120/kg",
             "trend": "down"
         },
         {
             "crop": "Rubber",
-            "price": "₹180/kg",
+            "price": "\u20b9180/kg",
             "trend": "stable"
         },
         {
             "crop": "Coconut",
-            "price": "₹35/piece",
+            "price": "\u20b935/piece",
+            "trend": "up"
+        },
+        {
+            "crop": "Coffee",
+            "price": "\u20b9250/kg",
+            "trend": "up"
+        },
+        {
+            "crop": "Cardamom",
+            "price": "\u20b91500/kg",
+            "trend": "stable"
+        },
+        {
+            "crop": "Ginger",
+            "price": "\u20b9120/kg",
+            "trend": "up"
+        },
+        {
+            "crop": "Jowar",
+            "price": "\u20b92800/quintal",
+            "trend": "up"
+        },
+        {
+            "crop": "Cotton",
+            "price": "\u20b96000/quintal",
+            "trend": "stable"
+        },
+        {
+            "crop": "Maize",
+            "price": "\u20b92000/quintal",
+            "trend": "up"
+        },
+        {
+            "crop": "Bengal Gram",
+            "price": "\u20b95200/quintal",
+            "trend": "stable"
+        },
+        {
+            "crop": "Red Gram",
+            "price": "\u20b97500/quintal",
+            "trend": "up"
+        },
+        {
+            "crop": "Pomegranate",
+            "price": "\u20b9140/kg",
+            "trend": "up"
+        },
+        {
+            "crop": "Ragi",
+            "price": "\u20b93300/quintal",
+            "trend": "up"
+        },
+        {
+            "crop": "Groundnut",
+            "price": "\u20b96500/quintal",
+            "trend": "down"
+        },
+        {
+            "crop": "Tomato",
+            "price": "\u20b930/kg",
+            "trend": "down"
+        },
+        {
+            "crop": "Mango",
+            "price": "\u20b980/kg",
+            "trend": "stable"
+        },
+        {
+            "crop": "Onion",
+            "price": "\u20b92600/quintal",
+            "trend": "up"
+        },
+        {
+            "crop": "Potato",
+            "price": "\u20b91800/quintal",
+            "trend": "stable"
+        },
+        {
+            "crop": "Turmeric",
+            "price": "\u20b99500/quintal",
+            "trend": "up"
+        },
+        {
+            "crop": "Chilli",
+            "price": "\u20b928000/quintal",
             "trend": "up"
         }
     ]

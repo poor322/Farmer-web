@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 import 'leaflet/dist/leaflet.css';
-import { MapContainer, TileLayer, Polygon, Popup, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import {
     indiaStates,
@@ -106,7 +106,7 @@ function App() {
 
     // Form States
     const [name, setName] = useState('');
-    const [aadhaarNumber, setAadhaarNumber] = useState('');
+    const [currentCrop, setCurrentCrop] = useState('Rice');
     const [surveyNumber, setSurveyNumber] = useState('');
     const [phoneNumber, setPhoneNumber] = useState('');
     const [stateLoc, setStateLoc] = useState('Karnataka');
@@ -133,12 +133,13 @@ function App() {
         taluk: string,
         district: string,
         state?: string,
-        aadhaar_number: string,
+        hobli?: string,
+        current_crop?: string,
+        primary_crop?: string,
         survey_number: string,
         phone_number?: string,
         land_area_acres?: number,
-        land_area_guntas?: number,
-        primary_crop?: string
+        land_area_guntas?: number
     } | null>(null);
     const [recommendations, setRecommendations] = useState<any>(null);
     const [marketPrices, setMarketPrices] = useState<CropPrice[]>([]);
@@ -388,9 +389,71 @@ function App() {
     const [bhoomiMapData, setBhoomiMapData] = useState<BhoomiMapData | null>(null);
     const [loadingBhoomiMap, setLoadingBhoomiMap] = useState(false);
 
-    const [activeTab, setActiveTab] = useState<'recommendation' | 'prices' | 'neighbours' | 'history'>('recommendation');
+    // Auto-fit bounds controller for Bhoomi Map
+    function MapController({ parcels, center }: { parcels: BhoomiParcel[]; center: [number, number] }) {
+        const map = useMap();
+        useEffect(() => {
+            if (parcels && parcels.length > 0) {
+                const allPoints: [number, number][] = [];
+                parcels.forEach(p => {
+                    if (p.polygon) {
+                        p.polygon.forEach(pt => allPoints.push(pt));
+                    }
+                });
+                if (allPoints.length > 0) {
+                    const bounds = L.latLngBounds(allPoints);
+                    map.fitBounds(bounds, { padding: [45, 45], maxZoom: 18 });
+                }
+            } else if (center) {
+                map.setView(center, 16);
+            }
+        }, [parcels, center, map]);
+        return null;
+    }
+
+    const [activeTab, setActiveTab] = useState<'recommendation' | 'prices' | 'neighbours' | 'history' | 'alerts'>('recommendation');
     const [showPassword, setShowPassword] = useState(false);
     const [showLoginPassword, setShowLoginPassword] = useState(false);
+
+    // APMC WhatsApp & SMS Alerts State
+    const [alertPreview, setAlertPreview] = useState<{
+        phone_number: string;
+        phone_display: string;
+        farmer_name: string;
+        crop: string;
+        crop_kn: string;
+        taluk: string;
+        district: string;
+        mandi_name: string;
+        modal_price: number;
+        unit: string;
+        min_price: number;
+        max_price: number;
+        arrivals: number;
+        trend: string;
+        trend_dir: string;
+        advisory_kn: string;
+        advisory_en: string;
+        timestamp: string;
+        whatsapp_text: string;
+        sms_text: string;
+        whatsapp_share_url: string;
+    } | null>(null);
+    const [alertType, setAlertType] = useState<'daily_mandi' | 'price_surge' | 'selling_advice'>('daily_mandi');
+    const [channelWhatsApp, setChannelWhatsApp] = useState<boolean>(true);
+    const [channelSMS, setChannelSMS] = useState<boolean>(true);
+    const [alertFrequency, setAlertFrequency] = useState<string>('daily_7am');
+    const [sendingAlert, setSendingAlert] = useState<boolean>(false);
+    const [alertDispatchResult, setAlertDispatchResult] = useState<{
+        status: string;
+        message: string;
+        sms_id?: string;
+        wa_id?: string;
+        carrier?: string;
+        time?: string;
+    } | null>(null);
+    const [alertCopied, setAlertCopied] = useState<boolean>(false);
+
 
     const availableCrops = ['Rice', 'Banana', 'Arecanut', 'Pepper', 'Cashew', 'Rubber', 'Coconut', 'Coffee', 'Cardamom', 'Ginger', 'Jowar', 'Cotton', 'Maize', 'Bengal Gram', 'Red Gram', 'Wheat', 'Pomegranate', 'Ragi', 'Groundnut', 'Sugarcane', 'Tomato', 'Mango', 'Onion', 'Potato', 'Turmeric', 'Chilli'];
 
@@ -638,7 +701,7 @@ function App() {
         setLoadingRegister(true);
         try {
             const payload = {
-                name, aadhaar_number: aadhaarNumber, survey_number: surveyNumber, phone_number: phoneNumber,
+                name, current_crop: currentCrop, survey_number: surveyNumber, phone_number: phoneNumber,
                 state: stateLoc, district: district || 'N/A',
                 taluk: taluk || 'N/A', hobli: hobli || 'N/A',
                 password: regPassword,
@@ -651,9 +714,9 @@ function App() {
                 body: JSON.stringify(payload)
             });
             if (response.ok) {
-                alert("Registration successful! Please login.");
+                alert("🌾 Registration successful! Welcome to the Farmer Community. Please login with your name or mobile.");
                 setIsLoginMode(true);
-                // Clear registration fields
+                setLoginName(name);
                 setRegPassword('');
             } else {
                 alert("Registration failed. Please check your inputs.");
@@ -717,6 +780,110 @@ function App() {
         setRegisteredUser(null);
         setLoginName('');
         setLoginPassword('');
+    };
+
+    // Synthesize notification audio chime using Web Audio API
+    const playNotificationSound = () => {
+        try {
+            const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+            if (!AudioContextClass) return;
+            const ctx = new AudioContextClass();
+            const now = ctx.currentTime;
+            
+            // First chime tone
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(587.33, now); // D5
+            gain1.gain.setValueAtTime(0.18, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.28);
+
+            // Second higher tone
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, now + 0.12); // A5
+            gain2.gain.setValueAtTime(0.20, now + 0.12);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.48);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.12);
+            osc2.stop(now + 0.48);
+        } catch {
+            // AudioContext may be restricted by browser until user gesture
+        }
+    };
+
+    const fetchAlertPreview = async (selectedType = alertType) => {
+        if (!registeredUser) return;
+        try {
+            const phone = registeredUser.phone_number || '9845112233';
+            const crop = registeredUser.current_crop || registeredUser.primary_crop || 'Arecanut';
+            const talukName = registeredUser.taluk || 'Sirsi';
+            const distName = registeredUser.district || 'Uttara Kannada';
+            const name = registeredUser.name || 'Farmer';
+
+            const res = await fetch(`http://localhost:8000/alerts/preview?phone_number=${encodeURIComponent(phone)}&farmer_name=${encodeURIComponent(name)}&crop=${encodeURIComponent(crop)}&taluk=${encodeURIComponent(talukName)}&district=${encodeURIComponent(distName)}&alert_type=${selectedType}`);
+            if (res.ok) {
+                const data = await res.json();
+                setAlertPreview(data);
+            }
+        } catch (err) {
+            console.error('Error fetching alert preview:', err);
+        }
+    };
+
+    const handleSendSimulation = async () => {
+        if (!registeredUser) return;
+        setSendingAlert(true);
+        setAlertDispatchResult(null);
+
+        const channel = (channelWhatsApp && channelSMS) ? 'both' : channelWhatsApp ? 'whatsapp' : 'sms';
+        const phone = registeredUser.phone_number || '9845112233';
+        const crop = registeredUser.current_crop || registeredUser.primary_crop || 'Arecanut';
+
+        try {
+            const res = await fetch('http://localhost:8000/alerts/send-simulation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone_number: phone,
+                    farmer_name: registeredUser.name || 'Farmer',
+                    crop: crop,
+                    taluk: registeredUser.taluk || 'Sirsi',
+                    district: registeredUser.district || 'Uttara Kannada',
+                    channel: channel,
+                    alert_type: alertType
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                playNotificationSound();
+                setAlertDispatchResult({
+                    status: 'success',
+                    message: data.message,
+                    sms_id: data.sms_message_id,
+                    wa_id: data.whatsapp_message_id,
+                    carrier: data.carrier_route,
+                    time: data.timestamp
+                });
+            }
+        } catch (err) {
+            console.error('Simulation error:', err);
+        } finally {
+            setSendingAlert(false);
+        }
+    };
+
+    const handleCopyAlert = (text: string) => {
+        navigator.clipboard.writeText(text);
+        setAlertCopied(true);
+        setTimeout(() => setAlertCopied(false), 2500);
     };
 
     const handleCropRecommendation = async () => {
@@ -825,17 +992,29 @@ function App() {
         'Turmeric': '🌿', 'Chilli': '🌶️'
     };
 
+    const resolveCropImage = (cropName?: string, varietyImg?: string, cropImg?: string) => {
+        const cLower = (cropName || '').toLowerCase();
+        const vLower = (varietyImg || '').toLowerCase();
+        const crLower = (cropImg || '').toLowerCase();
+        const coconutKeywords = ['coconut', 'west coast tall', 'chowghat', 'tiptur tall', 'lakshadweep', 'gangabondam', 'kera sankara'];
+        if (coconutKeywords.some(k => cLower.includes(k) || vLower.includes(k) || crLower.includes(k))) {
+            return '/coconut.jpg';
+        }
+        return varietyImg || cropImg || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=700&q=80';
+    };
+
     if (!isRegistered) {
         return (
             <div className="registration-container">
                 <header className="reg-header">
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.75rem' }}>
+                    <div className="reg-brand-mark" style={{ fontSize: '2.5rem', marginBottom: '0.4rem' }}>🌱</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', margin: '0.65rem 0' }}>
                         <div className="lang-switcher">
                             <button className={lang === 'en' ? 'active' : ''} onClick={() => setLang('en')}>🇬🇧 English</button>
                             <button className={lang === 'kn' ? 'active' : ''} onClick={() => setLang('kn')}>🇮🇳 ಕನ್ನಡ</button>
                         </div>
                     </div>
-                    <h1>{t('portalTitle', lang)}</h1>
+                    <h1 className="reg-portal-title">{t('portalTitle', lang)}</h1>
                     <p className="reg-tagline">{t('portalSubtitle', lang)}</p>
                 </header>
 
@@ -906,12 +1085,37 @@ function App() {
 
                                 <div className="form-row">
                                     <div className="form-group">
-                                        <label>{t('aadhaarNumber', lang)}</label>
-                                        <input type="text" placeholder={lang === 'kn' ? '12 ಅಂಕಿಯ ಆಧಾರ್ ಸಂಖ್ಯೆ' : '12-digit Aadhaar number'} value={aadhaarNumber} onChange={(e) => setAadhaarNumber(e.target.value.replace(/\D/g, '').slice(0, 12))} required minLength={12} maxLength={12} pattern="\d{12}" title="Please enter a valid 12-digit Aadhaar number" />
+                                        <label>📱 {t('phoneNumber', lang)}</label>
+                                        <input 
+                                            type="tel" 
+                                            placeholder={lang === 'kn' ? '10 ಅಂಕಿಯ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ' : '10-digit mobile number'} 
+                                            value={phoneNumber} 
+                                            onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, '').slice(0, 10))} 
+                                            required 
+                                            pattern="\d{10}" 
+                                            title="Please enter a valid 10-digit mobile number" 
+                                        />
                                     </div>
                                     <div className="form-group">
-                                        <label>{t('phoneNumber', lang)}</label>
-                                        <input type="tel" placeholder={lang === 'kn' ? '10 ಅಂಕಿಯ ಮೊಬೈಲ್' : '10-digit mobile'} value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} required />
+                                        <label>🌱 {t('currentCropGrown', lang)}</label>
+                                        <select value={currentCrop} onChange={(e) => setCurrentCrop(e.target.value)} required>
+                                            <option value="Rice">🌾 {lang === 'kn' ? 'ಭತ್ತ / ಅಕ್ಕಿ (Rice)' : 'Rice (Paddy)'}</option>
+                                            <option value="Arecanut">🌴 {lang === 'kn' ? 'ಅಡಿಕೆ (Arecanut)' : 'Arecanut'}</option>
+                                            <option value="Coconut">🥥 {lang === 'kn' ? 'ತೆಂಗು (Coconut)' : 'Coconut'}</option>
+                                            <option value="Banana">🍌 {lang === 'kn' ? 'ಬಾಳೆ (Banana)' : 'Banana'}</option>
+                                            <option value="Pepper">🌿 {lang === 'kn' ? 'ಕಾಳುಮೆಣಸು (Black Pepper)' : 'Black Pepper'}</option>
+                                            <option value="Coffee">☕ {lang === 'kn' ? 'ಕಾಫಿ (Coffee)' : 'Coffee'}</option>
+                                            <option value="Cardamom">🌱 {lang === 'kn' ? 'ಏಲಕ್ಕಿ (Cardamom)' : 'Cardamom'}</option>
+                                            <option value="Cashew">🥜 {lang === 'kn' ? 'ಗೋಡಂಬಿ (Cashew)' : 'Cashew'}</option>
+                                            <option value="Rubber">🌳 {lang === 'kn' ? 'ರಬ್ಬರ್ (Rubber)' : 'Rubber'}</option>
+                                            <option value="Sugarcane">🎋 {lang === 'kn' ? 'ಕಬ್ಬು (Sugarcane)' : 'Sugarcane'}</option>
+                                            <option value="Maize">🌽 {lang === 'kn' ? 'ಮೆಕ್ಕೆಜೋಳ (Maize)' : 'Maize'}</option>
+                                            <option value="Ragi">🌾 {lang === 'kn' ? 'ರಾಗಿ (Finger Millet)' : 'Ragi'}</option>
+                                            <option value="Cotton">☁️ {lang === 'kn' ? 'ಹತ್ತಿ (Cotton)' : 'Cotton'}</option>
+                                            <option value="Ginger">🫚 {lang === 'kn' ? 'ಶುಂಠಿ (Ginger)' : 'Ginger'}</option>
+                                            <option value="Tomato">🍅 {lang === 'kn' ? 'ಟೊಮೆಟೊ (Tomato)' : 'Tomato'}</option>
+                                            <option value="Groundnut">🥜 {lang === 'kn' ? 'ಶೇಂಗಾ (Groundnut)' : 'Groundnut'}</option>
+                                        </select>
                                     </div>
                                 </div>
 
@@ -1006,11 +1210,30 @@ function App() {
     return (
         <div className="dashboard-container">
             <header className="dashboard-header">
+                <div className="gov-header-brand">
+                    <span className="dashboard-brand-icon" style={{ fontSize: '1.8rem', lineHeight: 1, marginRight: '0.25rem' }}>🌱</span>
+                    <div className="gov-brand-titles">
+                        <h2 className="gov-portal-main-title">ರೈತ ಮಿತ್ರ — Raitha Mitra</h2>
+                        <span className="gov-dept-sub">Integrated Agricultural Advisory & Market Intelligence</span>
+                    </div>
+                </div>
                 <div className="user-info">
                     <h2>{t('welcomeUser', lang)} {registeredUser?.name || 'Farmer'}</h2>
                     <p>
-                        {registeredUser?.taluk}, {registeredUser?.district} • {t('aadhaarNo', lang)} {registeredUser?.aadhaar_number ? `XXXX XXXX ${registeredUser.aadhaar_number.slice(-4)}` : ''}
+                        📍 {registeredUser?.taluk}, {registeredUser?.district}
+                        {registeredUser?.phone_number && (
+                            <span> • 📱 {registeredUser.phone_number}</span>
+                        )}
+                        {(registeredUser?.current_crop || registeredUser?.primary_crop) && (
+                            <span className="current-crop-badge">🌱 {t('currentCrop', lang)} <strong>{getCropName(registeredUser.current_crop || registeredUser.primary_crop || '', lang)}</strong></span>
+                        )}
                         {gpsActive && <span className="gps-active-badge">📍 GPS Live {gpsCoords ? `(${gpsCoords.lat.toFixed(4)}, ${gpsCoords.lon.toFixed(4)})` : ''}</span>}
+                        <button className="alerts-shortcut-pill" onClick={() => {
+                            setActiveTab('alerts');
+                            fetchAlertPreview(alertType);
+                        }}>
+                            <span className="live-pulse-dot"></span> 📲 {t('marketAlertsBtn', lang)}
+                        </button>
                     </p>
                     {registeredUser?.land_area_acres && (
                         <p className="user-land-info">📐 {t('registeredLand', lang)} {registeredUser.land_area_acres} {t('acres', lang)}, {registeredUser.land_area_guntas} {t('guntas', lang)}</p>
@@ -1068,12 +1291,22 @@ function App() {
                 <button className={activeTab === 'neighbours' ? 'active' : ''} onClick={() => setActiveTab('neighbours')}>
                     {t('tabNeighbours', lang)}
                 </button>
-                {farmerHistory && (
-                    <button className={activeTab === 'history' ? 'active' : ''} onClick={() => setActiveTab('history')}>
-                        {t('tabFarmAnalysis', lang)}
-                    </button>
-                )}
+                <button className={activeTab === 'history' ? 'active' : ''} onClick={() => {
+                    setActiveTab('history');
+                    if (!farmerHistory && registeredUser) {
+                        fetchFarmerHistory(registeredUser.name, registeredUser.phone_number || '');
+                    }
+                }}>
+                    {t('tabFarmAnalysis', lang)}
+                </button>
+                <button className={activeTab === 'alerts' ? 'active' : ''} onClick={() => {
+                    setActiveTab('alerts');
+                    fetchAlertPreview(alertType);
+                }}>
+                    {t('tabAlerts', lang)}
+                </button>
             </div>
+
 
             <main className="dashboard-content">
                 {/* ===== CROP RECOMMENDATION ===== */}
@@ -1136,7 +1369,7 @@ function App() {
                                                     {t('noCropsGrowing', lang)}
                                                 </p>
                                                 <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                                                    {lang === 'kn' ? 'ಕೆಳಗೆ ಎಐ ಶಿಫಾರಸುಗಳನ್ನು ಪಡೆಯಿರಿ' : 'Get AI recommendations below to find the best crop for your land'}
+                                                    {lang === 'kn' ? 'ಕೆಳಗೆ ಅಧಿಕೃತ ಕೃಷಿ ಇಲಾಖೆ ಶಿಫಾರಸುಗಳನ್ನು ಪಡೆಯಿರಿ' : 'View scientific agronomic advisory below to find the best crop for your land'}
                                                 </span>
                                             </div>
                                         </div>
@@ -1290,85 +1523,114 @@ function App() {
 
                                         return (
                                             <div key={cropName} className={`crop-card ${isExpanded ? 'crop-card-expanded' : ''}`} style={{ animationDelay: `${index * 0.1}s` }}>
-                                                <div className="crop-card-header">
-                                                    <span className="crop-icon">{cropEmojis[cropName] || '🌿'}</span>
-                                                    <span className={`trend ${trend}`}>
-                                                        {trend === 'up' ? t('trendRising', lang) : trend === 'down' ? t('trendFalling', lang) : t('trendStable', lang)}
-                                                    </span>
+                                                {/* Top Row: Crop Icon, Title, Genus & Status Trend */}
+                                                <div className="crop-card-top-row">
+                                                    <div className="crop-card-identity">
+                                                        <div className="crop-avatar-box">
+                                                            <span className="crop-icon">{cropEmojis[cropName] || '🌿'}</span>
+                                                        </div>
+                                                        <div className="crop-title-block">
+                                                            <h4 className="crop-name-heading">{getCropName(cropName, lang)}</h4>
+                                                            {item.botanical_genus && (
+                                                                <span className="crop-genus-tag">{item.botanical_genus}</span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div className={`crop-trend-pill ${trend}`}>
+                                                        {trend === 'up' ? `▲ ${t('trendRising', lang)}` : trend === 'down' ? `▼ ${t('trendFalling', lang)}` : `● ${t('trendStable', lang)}`}
+                                                    </div>
                                                 </div>
-                                                <h4>{getCropName(cropName, lang)}</h4>
-                                                {item.botanical_genus && (
-                                                    <span className="crop-genus-tag">{item.botanical_genus}</span>
-                                                )}
-                                                <p className="crop-price">{cropPrice === 'Check Market' ? t('checkMarket', lang) : cropPrice}</p>
-                                                
-                                                {/* Best Variety Recommendation Box */}
-                                                {item.best_variety && (
-                                                    <div className="card-best-variety-badge" onClick={() => openVarietyModal(cropName)} title="Click to view cultivar details">
-                                                        <div className="best-var-text">
-                                                            <span className="best-var-label">{t('bestForYourLand', lang)}</span>
-                                                            <strong>{item.best_variety.name} • {item.best_variety.suitability_score}% Match</strong>
-                                                        </div>
-                                                    </div>
-                                                )}
 
-                                                {/* Top Varieties Preview Chips */}
-                                                {item.top_varieties && item.top_varieties.length > 0 && (
-                                                    <div className="top-varieties-strip">
-                                                        <span className="strip-title">{t('topVarietiesLabel', lang)}:</span>
-                                                        <div className="strip-chips">
-                                                            {item.top_varieties.map((tv: CropVariety) => (
-                                                                <span key={tv.name} className="mini-variety-pill" onClick={() => openVarietyModal(cropName)}>
-                                                                    {tv.name} <small>{tv.suitability_score}%</small>
-                                                                </span>
-                                                            ))}
+                                                {/* Market Price & Land Fit Metric Card */}
+                                                <div className="crop-metrics-strip">
+                                                    <div className="crop-metric-cell">
+                                                        <span className="metric-cell-label">Mandi Modal Rate</span>
+                                                        <span className="metric-cell-value price-green">{cropPrice === 'Check Market' ? t('checkMarket', lang) : cropPrice}</span>
+                                                    </div>
+                                                    {item.best_variety && (
+                                                        <div className="crop-metric-cell align-right">
+                                                            <span className="metric-cell-label">{t('suitabilityMatch', lang)}</span>
+                                                            <span className="metric-cell-badge">{item.best_variety.suitability_score}% Match</span>
                                                         </div>
+                                                    )}
+                                                </div>
+                                                
+                                                {/* Professional Cultivar Showcase Box */}
+                                                {item.best_variety && (
+                                                    <div className="crop-cultivar-spotlight" onClick={() => openVarietyModal(cropName)} title="Click to view full agronomic profile">
+                                                        <div className="cultivar-lead-row">
+                                                            <div className="cultivar-meta">
+                                                                <span className="cultivar-eyebrow">⭐ {t('bestForYourLand', lang)}</span>
+                                                                <span className="cultivar-primary-name">{item.best_variety.name}</span>
+                                                            </div>
+                                                            <span className="cultivar-view-link">Specs →</span>
+                                                        </div>
+
+                                                        {/* Clean Alternative Cultivar Badges (No duplicate best_variety) */}
+                                                        {(() => {
+                                                            const altList = (item.top_varieties || [])
+                                                                .filter((tv: CropVariety) => tv.name !== item.best_variety?.name)
+                                                                .slice(0, 3);
+                                                            if (altList.length === 0) return null;
+                                                            return (
+                                                                <div className="cultivar-alternatives-row">
+                                                                    <span className="cultivar-alt-label">Also suited:</span>
+                                                                    <div className="cultivar-alt-chips">
+                                                                        {altList.map((tv: CropVariety) => (
+                                                                            <span key={tv.name} className="cultivar-clean-tag">
+                                                                                {tv.name}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 )}
                                                 
-                                                {/* Cross-reference with Neighbours' Farming Results */}
+                                                {/* Local Taluk Neighbourhood Benchmark */}
                                                 {(() => {
                                                     const nbMatch = neighbourData?.crop_summary?.find(cs => cs.crop.toLowerCase() === cropName.toLowerCase());
                                                     return (
                                                         <div 
-                                                            className={`card-neighbour-benchmark ${nbMatch ? 'has-farmers' : 'opportunity'}`}
+                                                            className={`crop-neighbour-bar ${nbMatch ? 'has-farmers' : 'opportunity'}`}
                                                             onClick={() => {
                                                                 if (nbMatch) setSelectedCropFilter(cropName);
                                                                 setActiveTab('neighbours');
                                                             }}
-                                                            title={nbMatch ? "Compare this recommendation with neighbours' farming results" : "Untapped local opportunity in your taluk"}
+                                                            title={nbMatch ? "Compare with local farmers in your taluk" : "Untapped local opportunity in your taluk"}
                                                         >
-                                                            <span className="nb-benchmark-icon">🏘️</span>
-                                                            <span className="nb-benchmark-text">
+                                                            <span className="cnb-icon">{nbMatch ? '🏘️' : '✨'}</span>
+                                                            <span className="cnb-text">
                                                                 {nbMatch ? (
-                                                                    <><strong>{nbMatch.farmer_count} {t('farmersGrowing', lang)}</strong> • Avg {nbMatch.avg_yield_per_acre} {nbMatch.yield_unit}/acre</>
+                                                                    <>{nbMatch.farmer_count} {t('farmersGrowing', lang)} • Avg {nbMatch.avg_yield_per_acre} {nbMatch.yield_unit}/ac</>
                                                                 ) : (
                                                                     <>{t('nicheOpportunity', lang)}</>
                                                                 )}
                                                             </span>
-                                                            <span className="nb-benchmark-action">{t('viewInNeighbours', lang)} →</span>
+                                                            <span className="cnb-action">Compare →</span>
                                                         </div>
                                                     );
                                                 })()}
 
+                                                {/* Clean Modern CTA Button Row */}
                                                 {varietiesList.length > 0 && (
-                                                    <div className="card-species-actions">
-                                                        <div className="species-actions-buttons">
-                                                            <button 
-                                                                type="button" 
-                                                                className="species-toggle-btn"
-                                                                onClick={() => setExpandedSpeciesCrop(isExpanded ? null : cropName)}
-                                                            >
-                                                                {isExpanded ? t('hideSpecies', lang) : `${t('viewSpecies', lang)} (${varietiesList.length})`}
-                                                            </button>
-                                                            <button
-                                                                type="button"
-                                                                className="species-modal-open-btn"
-                                                                onClick={() => openVarietyModal(cropName)}
-                                                            >
-                                                                {t('exploreVarietiesBtn', lang)}
-                                                            </button>
-                                                        </div>
+                                                    <div className="crop-action-group">
+                                                        <button
+                                                            type="button"
+                                                            className="crop-primary-action-btn"
+                                                            onClick={() => openVarietyModal(cropName)}
+                                                        >
+                                                            🌾 {t('exploreVarietiesBtn', lang)} ({varietiesList.length})
+                                                        </button>
+                                                        <button 
+                                                            type="button" 
+                                                            className={`crop-quick-drawer-toggle ${isExpanded ? 'active' : ''}`}
+                                                            onClick={() => setExpandedSpeciesCrop(isExpanded ? null : cropName)}
+                                                            title={isExpanded ? t('hideSpecies', lang) : t('viewSpecies', lang)}
+                                                        >
+                                                            {isExpanded ? '▲ Hide' : '▼ Quick View'}
+                                                        </button>
                                                     </div>
                                                 )}
 
@@ -1395,12 +1657,12 @@ function App() {
                                                                     <div className="drawer-variety-top">
                                                                         <div className="drawer-thumb-wrap">
                                                                             <img
-                                                                                src={v.image_url || item.crop_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=300&q=80'}
+                                                                                src={resolveCropImage(cropName, v.image_url, item.crop_image)}
                                                                                 alt={v.name}
                                                                                 className="drawer-variety-img"
                                                                                 onError={(e: any) => {
                                                                                     e.target.onerror = null;
-                                                                                    e.target.src = 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=300&q=80';
+                                                                                    e.target.src = resolveCropImage(cropName, v.image_url, item.crop_image);
                                                                                 }}
                                                                             />
                                                                         </div>
@@ -1672,12 +1934,12 @@ function App() {
                                                             {/* Variety Photo */}
                                                             <div className="species-card-img-wrap">
                                                                 <img
-                                                                    src={v.image_url || speciesDataMap[selectedMarketResult.crop]?.crop_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=350&q=80'}
+                                                                    src={resolveCropImage(selectedMarketResult.crop, v.image_url, speciesDataMap[selectedMarketResult.crop]?.crop_image)}
                                                                     alt={v.name}
                                                                     className="species-thumb-img"
                                                                     onError={(e: any) => {
                                                                         e.target.onerror = null;
-                                                                        e.target.src = 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=350&q=80';
+                                                                        e.target.src = resolveCropImage(selectedMarketResult.crop, v.image_url, speciesDataMap[selectedMarketResult.crop]?.crop_image);
                                                                     }}
                                                                 />
                                                                 {v.suitability_score !== undefined && (
@@ -1974,12 +2236,19 @@ function App() {
 
                                 {/* Right Column: Map & Analytics */}
                                 <div className="neighbours-main-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
-                                    <div className="neighbour-scope-badge" style={{ marginTop: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                                            <span className="scope-icon">📊</span>
-                                            <span><strong>{neighbourData.total_farmers}</strong> farmers found in <strong>{neighbourData.scope}</strong></span>
+                                    {/* Unified Executive Summary Strip */}
+                                    <div className="neighbour-summary-bar">
+                                        <div className="nsb-left">
+                                            <span className="nsb-stat-badge">
+                                                📊 <strong>{neighbourData.total_farmers}</strong> Farmers in <strong>{neighbourData.scope}</strong>
+                                            </span>
+                                            {neighbourData.insight && (
+                                                <span className="nsb-insight-chip">
+                                                    🌾 {neighbourData.insight}
+                                                </span>
+                                            )}
                                         </div>
-                                        <div>
+                                        <div className="nsb-right">
                                             {neighbourData.is_real_data ? (
                                                 <span className="data-source-pill real" title={neighbourData.data_source_label || 'Verified farmer survey records'}>
                                                     ✓ {t('verifiedFarmerData', lang)}
@@ -1992,19 +2261,12 @@ function App() {
                                         </div>
                                     </div>
 
-                                    {/* Demand Insight Banner */}
-                                    {neighbourData.insight && (
-                                        <div className="demand-insight-banner">
-                                            <p>{neighbourData.insight}</p>
-                                        </div>
-                                    )}
-
-                                    {/* Compare Recommended Varieties with Neighbours Results */}
+                                    {/* Clean Crop Adoption & Recommendation Benchmark */}
                                     {recommendations?.recommended_crops && recommendations.recommended_crops.length > 0 && (
                                         <div className="neighbour-rec-comparison-box">
                                             <div className="nrc-header">
                                                 <div>
-                                                    <h4>🔍 {t('compareWithRecommendations', lang)}</h4>
+                                                    <h4>📋 {t('compareWithRecommendations', lang)}</h4>
                                                     <p className="nrc-sub">{t('compareRecommendationsSub', lang)}</p>
                                                 </div>
                                             </div>
@@ -2024,83 +2286,59 @@ function App() {
                                                                         <strong className="nrc-crop-name">{getCropName(cropName, lang)}</strong>
                                                                         {bestVar && (
                                                                             <span className="nrc-best-var">
-                                                                                {t('recommendedVariety', lang)}: <strong>{bestVar.name}</strong> ({bestVar.suitability_score}% match)
+                                                                                Top Variety: <strong>{bestVar.name}</strong>
                                                                             </span>
                                                                         )}
                                                                     </div>
                                                                 </div>
+                                                                <span className={`nrc-status-pill ${nbCrop ? (nbCrop.percentage >= 40 ? 'high' : 'balanced') : 'opportunity'}`}>
+                                                                    {nbCrop ? `${nbCrop.farmer_count} Growing (${nbCrop.percentage.toFixed(0)}%)` : 'Untapped Opportunity'}
+                                                                </span>
+                                                            </div>
+
+                                                            {/* Streamlined Metrics Grid (No Unnecessary Text Clutter) */}
+                                                            <div className="nrc-clean-metrics">
                                                                 {nbCrop ? (
-                                                                    <span className={`nrc-status-pill ${nbCrop.percentage >= 40 ? 'high' : nbCrop.percentage >= 15 ? 'balanced' : 'niche'}`}>
-                                                                        {nbCrop.percentage >= 40 ? t('highCompetition', lang) : nbCrop.percentage >= 15 ? t('balancedAdoption', lang) : t('nicheOpportunity', lang)}
-                                                                    </span>
+                                                                    <div className="nrc-data-row">
+                                                                        <div className="nrc-data-point">
+                                                                            <span className="ndp-label">Avg Yield</span>
+                                                                            <span className="ndp-val">{nbCrop.avg_yield_per_acre} {nbCrop.yield_unit}/ac</span>
+                                                                        </div>
+                                                                        <div className="nrc-data-point">
+                                                                            <span className="ndp-label">Avg Profit</span>
+                                                                            <span className="ndp-val highlight">₹{nbCrop.avg_profit_per_acre.toLocaleString('en-IN')}/ac</span>
+                                                                        </div>
+                                                                        <div className="nrc-data-point">
+                                                                            <span className="ndp-label">Total Land</span>
+                                                                            <span className="ndp-val">{nbCrop.total_land_acres} acres</span>
+                                                                        </div>
+                                                                    </div>
                                                                 ) : (
-                                                                    <span className="nrc-status-pill opportunity">
-                                                                        {t('nicheOpportunity', lang)}
-                                                                    </span>
+                                                                    <div className="nrc-opportunity-row">
+                                                                        <span className="opp-tag">✨ High Potential</span>
+                                                                        <span className="opp-desc">0 local farmers currently planting in {neighbourData.scope}</span>
+                                                                    </div>
                                                                 )}
                                                             </div>
 
-                                                            <div className="nrc-metrics-grid">
-                                                                <div className="nrc-metric-cell">
-                                                                    <span className="nrc-metric-label">Recommended Criteria:</span>
-                                                                    <span className="nrc-metric-val">
-                                                                        {bestVar?.expected_yield ? `${bestVar.expected_yield}` : `${rc.price || 'Market Rate'}`} • {bestVar?.season || 'Kharif'}
-                                                                    </span>
-                                                                    <span className="nrc-metric-sub">
-                                                                        Optimal: {bestVar?.soil_type || 'Loamy'} {bestVar?.soil_ph_range ? `(pH ${bestVar.soil_ph_range[0]}-${bestVar.soil_ph_range[1]})` : ''}
-                                                                    </span>
-                                                                </div>
-                                                                <div className="nrc-metric-cell">
-                                                                    <span className="nrc-metric-label">Neighbours' Reality:</span>
-                                                                    {nbCrop ? (
-                                                                        <>
-                                                                            <span className="nrc-metric-val highlight">
-                                                                                {nbCrop.farmer_count} farmers • Avg {nbCrop.avg_yield_per_acre} {nbCrop.yield_unit}/acre
-                                                                            </span>
-                                                                            <span className="nrc-metric-sub">
-                                                                                Avg Profit: ₹{nbCrop.avg_profit_per_acre.toLocaleString('en-IN')}/acre • {nbCrop.total_land_acres} acres total
-                                                                            </span>
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <span className="nrc-metric-val muted">0 neighbours planting</span>
-                                                                            <span className="nrc-metric-sub">Zero local supply competition in {neighbourData.scope}</span>
-                                                                        </>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-
-                                                            {/* Actual Cultivars Grown by Neighbours */}
-                                                            {nbCrop?.varieties_breakdown && nbCrop.varieties_breakdown.length > 0 && (
-                                                                <div className="nrc-cultivars-row">
-                                                                    <span className="nrc-cultivars-label">{t('varietiesPlanted', lang)}:</span>
-                                                                    <div className="nrc-cultivars-list">
-                                                                        {nbCrop.varieties_breakdown.map(vb => (
-                                                                            <span key={vb.variety} className="nrc-var-chip">
-                                                                                <strong>{vb.variety}</strong> ({vb.farmers_count} {t('farmers', lang)} • {vb.avg_yield} {nbCrop.yield_unit}/acre • {vb.market_price_display || vb.growing_season})
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-
                                                             <div className="nrc-card-actions">
-                                                                {nbCrop && (
+                                                                {nbCrop ? (
                                                                     <button
                                                                         type="button"
                                                                         className={`nrc-action-btn ${isSelectedCrop ? 'active' : ''}`}
                                                                         onClick={() => setSelectedCropFilter(isSelectedCrop ? null : cropName)}
                                                                     >
-                                                                        {isSelectedCrop ? 'Showing in List' : `View ${nbCrop.farmer_count} Farmers`}
+                                                                        {isSelectedCrop ? '✓ Filtering List' : `Filter ${nbCrop.farmer_count} Farmers →`}
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        type="button"
+                                                                        className="nrc-action-btn secondary"
+                                                                        onClick={() => openVarietyModal(cropName)}
+                                                                    >
+                                                                        View Cultivar Details →
                                                                     </button>
                                                                 )}
-                                                                <button
-                                                                    type="button"
-                                                                    className="nrc-action-btn secondary"
-                                                                    onClick={() => openVarietyModal(cropName)}
-                                                                >
-                                                                    {t('exploreVarieties', lang)}
-                                                                </button>
                                                             </div>
                                                         </div>
                                                     );
@@ -2159,6 +2397,7 @@ function App() {
                                                         style={{ height: '100%', width: '100%' }}
                                                         scrollWheelZoom={true}
                                                     >
+                                                        <MapController parcels={bhoomiMapData.parcels} center={bhoomiMapData.center} />
                                                         <TileLayer
                                                             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                                                             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -2172,23 +2411,30 @@ function App() {
                                                                     key={p.survey_number}
                                                                     positions={p.polygon}
                                                                     pathOptions={{
-                                                                        color: isMatched ? (p.is_user ? '#a78bfa' : p.is_empty ? '#94a3b8' : '#f43f5e') : '#4b5563',
+                                                                        color: p.is_user ? '#fbbf24' : (p.is_empty ? '#94a3b8' : '#22c55e'),
                                                                         fillColor: p.is_user 
-                                                                            ? '#7c3aed' 
-                                                                            : p.is_empty ? '#1e293b'
+                                                                            ? '#10b981' 
+                                                                            : p.is_empty ? '#334155'
                                                                             : p.crop_grown === 'Rice' ? '#34d399'
                                                                             : p.crop_grown === 'Arecanut' ? '#fbbf24'
                                                                             : p.crop_grown === 'Coconut' ? '#a855f7'
                                                                             : p.crop_grown === 'Banana' ? '#f43f5e'
+                                                                            : p.crop_grown === 'Coffee' ? '#b45309'
                                                                             : '#3b82f6',
-                                                                        fillOpacity: isMatched ? (p.is_empty ? 0.35 : 0.65) : 0.05,
-                                                                        opacity: isMatched ? 1.0 : 0.15,
-                                                                        weight: isMatched ? (p.is_user ? 4.0 : 2.0) : 1.0,
-                                                                        dashArray: p.is_user ? '3, 6' : p.is_empty ? '4, 4' : ''
+                                                                        fillOpacity: isMatched ? (p.is_user ? 0.55 : p.is_empty ? 0.35 : 0.45) : 0.15,
+                                                                        opacity: isMatched ? 1.0 : 0.45,
+                                                                        weight: p.is_user ? 3.5 : 2.2,
+                                                                        dashArray: p.is_user ? '4, 4' : p.is_empty ? '4, 4' : ''
                                                                     }}
                                                                 >
-                                                                <Tooltip direction="center" offset={[0, 0]} opacity={0.9} permanent>
-                                                                    <span style={{ fontWeight: 'bold', fontSize: '0.8rem', color: p.is_empty ? '#64748b' : '#064e3b' }}>{p.survey_number}</span>
+                                                                <Tooltip 
+                                                                    direction="center" 
+                                                                    offset={[0, 0]} 
+                                                                    opacity={isMatched ? 0.95 : 0.45} 
+                                                                    permanent
+                                                                    className={`bhoomi-cadastral-label ${p.is_user ? 'user-land' : ''}`}
+                                                                >
+                                                                    <span>{p.is_user ? `⭐ Sy. ${p.survey_number} (You)` : `Sy. ${p.survey_number}`}</span>
                                                                 </Tooltip>
                                                                 <Popup>
                                                                     <div className="bhoomi-rtc-popup">
@@ -2610,7 +2856,8 @@ function App() {
                 )}
 
                 {/* ===== MY FARM ANALYSIS ===== */}
-                {activeTab === 'history' && farmerHistory && (
+                {activeTab === 'history' && (
+                    farmerHistory ? (
                     <div className="section-card history-section">
                         <div className="history-header">
                             <h3>📊 My Farm Performance History</h3>
@@ -2697,6 +2944,271 @@ function App() {
                             }</strong> with a total profit of <strong>₹{
                                 farmerHistory.history.reduce((prev, current) => (prev.profit > current.profit) ? prev : current).profit.toLocaleString('en-IN')
                             }</strong>.</p>
+                        </div>
+                    </div>
+                    ) : (
+                    <div className="section-card history-section" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
+                        <div className="weather-loading"><span className="spinner"></span> Loading your farm performance analytics...</div>
+                    </div>
+                    )
+                )}
+
+                {/* ===== APMC WHATSAPP & SMS ALERTS ===== */}
+                {activeTab === 'alerts' && (
+                    <div className="section-card alerts-section">
+                        {/* Hero Header */}
+                        <div className="alerts-hero-banner">
+                            <div className="alerts-hero-text">
+                                <div className="alerts-badge-row">
+                                    <span className="live-channel-badge whatsapp">🟢 WhatsApp Official Verified</span>
+                                    <span className="live-channel-badge sms">⚡ TRAI DLT SMS Gateway</span>
+                                    <span className="live-channel-badge pulse">🔔 Live Mandi Dispatch</span>
+                                </div>
+                                <h2>📲 {t('alertsHeroTitle', lang)}</h2>
+                                <p>{t('alertsHeroDesc', lang)}</p>
+                                <div className="alerts-farmer-tags">
+                                    <span className="farmer-tag-pill">📱 {alertPreview?.phone_display || registeredUser?.phone_number || '+91 98451 12233'}</span>
+                                    <span className="farmer-tag-pill">🌱 {getCropName(registeredUser?.current_crop || registeredUser?.primary_crop || 'Arecanut', lang)}</span>
+                                    <span className="farmer-tag-pill">📍 {registeredUser?.taluk || 'Sirsi'} APMC Yard</span>
+                                </div>
+                            </div>
+                            <div className="alerts-hero-stat">
+                                <div className="live-price-pulse-card">
+                                    <span className="pulse-title">Today's Modal Rate</span>
+                                    <span className="pulse-rate">₹{alertPreview?.modal_price?.toLocaleString('en-IN') || '48,500'}</span>
+                                    <span className="pulse-unit">per {alertPreview?.unit || 'Quintal'}</span>
+                                    <span className="pulse-trend-badge up">▲ {alertPreview?.trend || '+2.8%'} Bullish Demand</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Alert Type & Channel Selectors */}
+                        <div className="alerts-config-grid">
+                            <div className="config-card">
+                                <h4>🎯 Select Alert Type</h4>
+                                <div className="alert-type-buttons">
+                                    <button
+                                        type="button"
+                                        className={`alert-type-btn ${alertType === 'daily_mandi' ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setAlertType('daily_mandi');
+                                            fetchAlertPreview('daily_mandi');
+                                        }}
+                                    >
+                                        <span className="type-icon">🌾</span>
+                                        <div>
+                                            <strong>{t('alertTypeDaily', lang)}</strong>
+                                            <small>Sent daily at 7:00 AM before auction</small>
+                                        </div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`alert-type-btn ${alertType === 'price_surge' ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setAlertType('price_surge');
+                                            fetchAlertPreview('price_surge');
+                                        }}
+                                    >
+                                        <span className="type-icon">🚨</span>
+                                        <div>
+                                            <strong>{t('alertTypeSurge', lang)}</strong>
+                                            <small>Instant trigger when rate spikes +3%</small>
+                                        </div>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`alert-type-btn ${alertType === 'selling_advice' ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setAlertType('selling_advice');
+                                            fetchAlertPreview('selling_advice');
+                                        }}
+                                    >
+                                        <span className="type-icon">⚖️</span>
+                                        <div>
+                                            <strong>{t('alertTypeSelling', lang)}</strong>
+                                            <small>Harvest & grading premium advice</small>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="config-card">
+                                <h4>⚙️ Notification Channels & Schedule</h4>
+                                <div className="channel-checkboxes">
+                                    <label className="channel-toggle-row">
+                                        <input
+                                            type="checkbox"
+                                            checked={channelWhatsApp}
+                                            onChange={(e) => setChannelWhatsApp(e.target.checked)}
+                                        />
+                                        <span className="toggle-label">
+                                            <strong>🟢 WhatsApp Notifications</strong>
+                                            <small>Formatted chat bulletin with emojis & market trends</small>
+                                        </span>
+                                    </label>
+                                    <label className="channel-toggle-row">
+                                        <input
+                                            type="checkbox"
+                                            checked={channelSMS}
+                                            onChange={(e) => setChannelSMS(e.target.checked)}
+                                        />
+                                        <span className="toggle-label">
+                                            <strong>📱 SMS Priority Alerts</strong>
+                                            <small>DLT Sender: KA-APMC (Works even without internet)</small>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <div className="frequency-selector">
+                                    <label>Alert Frequency:</label>
+                                    <select value={alertFrequency} onChange={(e) => setAlertFrequency(e.target.value)}>
+                                        <option value="daily_7am">🌅 Daily 7:00 AM (Market Opening)</option>
+                                        <option value="surge_only">⚡ Price Surge Spikes (+3%) Only</option>
+                                        <option value="weekly">📅 Weekly Comprehensive Digest</option>
+                                    </select>
+                                </div>
+
+                                <div className="dispatch-action-box">
+                                    <button
+                                        type="button"
+                                        className="send-simulation-btn"
+                                        onClick={handleSendSimulation}
+                                        disabled={sendingAlert}
+                                    >
+                                        {sendingAlert ? (
+                                            <><span className="spinner"></span> {t('sendingAlert', lang)}</>
+                                        ) : (
+                                            `🚀 ${t('sendTestAlert', lang)}`
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Dispatch Confirmation Toast */}
+                        {alertDispatchResult && (
+                            <div className="dispatch-toast animate-slide-in">
+                                <div className="dispatch-toast-header">
+                                    <span className="toast-icon">✅</span>
+                                    <div>
+                                        <strong>{t('deliverySimulatedSuccess', lang)}</strong>
+                                        <p>{alertDispatchResult.message}</p>
+                                    </div>
+                                </div>
+                                <div className="dispatch-meta-grid">
+                                    <div className="meta-item">
+                                        <span>Carrier Hub:</span>
+                                        <strong>{alertDispatchResult.carrier}</strong>
+                                    </div>
+                                    {alertDispatchResult.sms_id && (
+                                        <div className="meta-item">
+                                            <span>SMS DLT ID:</span>
+                                            <code>{alertDispatchResult.sms_id}</code>
+                                        </div>
+                                    )}
+                                    {alertDispatchResult.wa_id && (
+                                        <div className="meta-item">
+                                            <span>WhatsApp Message ID:</span>
+                                            <code>{alertDispatchResult.wa_id}</code>
+                                        </div>
+                                    )}
+                                    <div className="meta-item">
+                                        <span>Timestamp:</span>
+                                        <strong>{alertDispatchResult.time}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Live Phone Mockup Dual Screen Preview */}
+                        <div className="phone-previews-container">
+                            <h3 className="previews-title">📱 Live Screen Preview on Farmer's Phone</h3>
+                            <div className="phone-previews-grid">
+                                {/* WhatsApp Simulator */}
+                                <div className="smartphone-frame whatsapp-frame">
+                                    <div className="phone-notch"></div>
+                                    <div className="phone-top-bar">
+                                        <span>9:41 AM</span>
+                                        <span>📶 5G 🔋 98%</span>
+                                    </div>
+                                    <div className="wa-app-header">
+                                        <div className="wa-avatar">🌾</div>
+                                        <div className="wa-contact-info">
+                                            <div className="wa-contact-name">
+                                                Karnataka APMC <span className="wa-verified-tick">✓</span>
+                                            </div>
+                                            <div className="wa-contact-status">Official Govt Business Account</div>
+                                        </div>
+                                    </div>
+                                    <div className="wa-chat-canvas">
+                                        <div className="wa-date-pill">Today</div>
+                                        <div className="wa-message-bubble">
+                                            <pre className="wa-message-text">{alertPreview?.whatsapp_text || 'Loading Karnataka APMC Bulletin...'}</pre>
+                                            <div className="wa-message-meta">
+                                                <span>07:05 AM</span>
+                                                <span className="wa-double-tick">✓✓</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="phone-actions-footer">
+                                        {alertPreview?.whatsapp_share_url && (
+                                            <a
+                                                href={alertPreview.whatsapp_share_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="phone-btn wa-share-btn"
+                                            >
+                                                🟢 {t('shareToWhatsapp', lang)}
+                                            </a>
+                                        )}
+                                        <button
+                                            type="button"
+                                            className="phone-btn copy-btn"
+                                            onClick={() => handleCopyAlert(alertPreview?.whatsapp_text || '')}
+                                        >
+                                            {alertCopied ? `✓ ${t('copied', lang)}` : `📋 ${t('copyAlertText', lang)}`}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* SMS Simulator */}
+                                <div className="smartphone-frame sms-frame">
+                                    <div className="phone-notch"></div>
+                                    <div className="phone-top-bar">
+                                        <span>9:41 AM</span>
+                                        <span>📶 5G 🔋 98%</span>
+                                    </div>
+                                    <div className="sms-app-header">
+                                        <div className="sms-sender-avatar">🏛️</div>
+                                        <div className="sms-sender-title">KA-APMC</div>
+                                        <div className="sms-sender-sub">Govt of Karnataka • DLT Header</div>
+                                    </div>
+                                    <div className="sms-chat-canvas">
+                                        <div className="sms-banner-card">
+                                            <div className="sms-banner-top">
+                                                <span>MESSAGES • now</span>
+                                            </div>
+                                            <div className="sms-banner-content">
+                                                <strong>KA-APMC</strong>
+                                                <p>{alertPreview?.sms_text || 'Loading SMS Alert...'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="sms-bubble">
+                                            <p className="sms-body-text">{alertPreview?.sms_text || 'Loading SMS Alert...'}</p>
+                                            <span className="sms-time">07:05 AM • via Carrier SMS</span>
+                                        </div>
+                                    </div>
+                                    <div className="phone-actions-footer">
+                                        <button
+                                            type="button"
+                                            className="phone-btn copy-btn full-width"
+                                            onClick={() => handleCopyAlert(alertPreview?.sms_text || '')}
+                                        >
+                                            {alertCopied ? `✓ ${t('copied', lang)}` : `📋 Copy SMS Text`}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
@@ -2885,12 +3397,12 @@ function App() {
                                                             {/* Top Banner Image with Overlay */}
                                                             <div className="modal-var-image-wrap">
                                                                 <img
-                                                                    src={v.image_url || varietyModalData?.crop_image || 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=700&q=80'}
+                                                                    src={resolveCropImage(varietyModalCrop || undefined, v.image_url, varietyModalData?.crop_image)}
                                                                     alt={v.name}
                                                                     className="modal-var-img"
                                                                     onError={(e: any) => {
                                                                         e.target.onerror = null;
-                                                                        e.target.src = 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?auto=format&fit=crop&w=700&q=80';
+                                                                        e.target.src = resolveCropImage(varietyModalCrop || undefined, v.image_url, varietyModalData?.crop_image);
                                                                     }}
                                                                 />
                                                                 <div className="modal-var-img-overlay">
@@ -2906,60 +3418,45 @@ function App() {
                                                                 <div className="modal-var-header-row">
                                                                     <div>
                                                                         <h4 className="modal-var-title">{v.name}</h4>
-                                                                        {v.scientific_species && (
-                                                                            <span className="modal-var-sci">{v.scientific_species}</span>
-                                                                        )}
                                                                     </div>
                                                                     <span className="modal-var-price-badge">
                                                                         {v.price_display || `₹${v.price}/${varietyModalData?.unit || 'quintal'}`}
                                                                     </span>
                                                                 </div>
 
-                                                                {/* Match Highlights Pills */}
+                                                                {/* Top Match Highlight (1 clean, high-signal chip) */}
                                                                 {v.match_highlights && v.match_highlights.length > 0 && (
-                                                                    <div className="modal-var-match-reasons">
-                                                                        {v.match_highlights.map((reason, rIdx) => (
-                                                                            <span key={rIdx} className="match-reason-chip">{reason}</span>
-                                                                        ))}
+                                                                    <div className="modal-var-match-single">
+                                                                        <span className="match-reason-single-chip">
+                                                                            ✓ {v.match_highlights.find((h: string) => h.toLowerCase().includes('soil') || h.toLowerCase().includes('match')) || v.match_highlights[0]}
+                                                                        </span>
                                                                     </div>
                                                                 )}
 
-                                                                {/* Agronomic Specifications Table */}
+                                                                {/* Essential Agronomic Specifications (Clean 4-Item Grid) */}
                                                                 <div className="modal-var-spec-grid">
                                                                     <div className="var-spec-item">
-                                                                        <span className="spec-label">{t('soilRequirements', lang)}:</span>
-                                                                        <span className="spec-value">{v.soil_type || 'Loamy / Red Soil'}</span>
-                                                                        {v.soil_ph_range && (
-                                                                            <span className="spec-sub">Optimal pH: {v.soil_ph_range[0]} - {v.soil_ph_range[1]}</span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="var-spec-item">
-                                                                        <span className="spec-label">{t('climateRequirements', lang)}:</span>
-                                                                        <span className="spec-value">{v.climate ? (v.climate.length > 55 ? v.climate.substring(0, 55) + '...' : v.climate) : 'Tropical humid'}</span>
-                                                                        <span className="spec-sub">{v.min_temp}°C - {v.max_temp}°C • {v.rainfall_range?.[0]}-{v.rainfall_range?.[1]} mm</span>
-                                                                    </div>
-                                                                    <div className="var-spec-item">
-                                                                        <span className="spec-label">{t('growingSeason', lang)}:</span>
-                                                                        <span className="spec-value">{v.growing_months || v.season}</span>
-                                                                    </div>
-                                                                    <div className="var-spec-item">
-                                                                        <span className="spec-label">{t('maturityPeriod', lang)}:</span>
-                                                                        <span className="spec-value">{v.maturity_period || `${v.duration_days} days`}</span>
-                                                                    </div>
-                                                                    <div className="var-spec-item">
-                                                                        <span className="spec-label">{t('expectedYieldLabel', lang)}:</span>
+                                                                        <span className="spec-label">{t('expectedYieldLabel', lang)}</span>
                                                                         <span className="spec-value highlight-yield">{v.expected_yield || `${v.yield_per_acre} ${varietyModalData?.unit || 'q'}/acre`}</span>
                                                                     </div>
                                                                     <div className="var-spec-item">
-                                                                        <span className="spec-label">{t('bestRegionsLabel', lang)}:</span>
-                                                                        <span className="spec-value">{(v.best_regions || []).slice(0, 3).join(', ')}</span>
+                                                                        <span className="spec-label">{t('maturityPeriod', lang)}</span>
+                                                                        <span className="spec-value">{v.maturity_period || `${v.duration_days} days`}</span>
+                                                                    </div>
+                                                                    <div className="var-spec-item">
+                                                                        <span className="spec-label">{t('growingSeason', lang)}</span>
+                                                                        <span className="spec-value">{v.growing_months || v.season}</span>
+                                                                    </div>
+                                                                    <div className="var-spec-item">
+                                                                        <span className="spec-label">{t('soilRequirements', lang)}</span>
+                                                                        <span className="spec-value">{(v.soil_type || 'Loamy').split(';')[0].split(',').slice(0, 2).join(', ').trim()}{v.soil_ph_range ? ` (pH ${v.soil_ph_range[0]}-${v.soil_ph_range[1]})` : ''}</span>
                                                                     </div>
                                                                 </div>
 
-                                                                {/* Agronomic Characteristics Notes */}
+                                                                {/* Key Agronomic Trait */}
                                                                 {v.characteristics && (
                                                                     <p className="modal-var-desc">
-                                                                        <strong>Agronomic Note:</strong> {v.characteristics}
+                                                                        💡 {v.characteristics}
                                                                     </p>
                                                                 )}
 

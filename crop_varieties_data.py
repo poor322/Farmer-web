@@ -1279,7 +1279,7 @@ CROP_SPECIES = {
     "Coconut": {
         "unit": "piece",
         "botanical_genus": "Cocos nucifera",
-        "crop_image": "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=700&q=80",
+        "crop_image": "/coconut.jpg",
         "varieties": [
             {
                 "name": "West Coast Tall",
@@ -1313,7 +1313,7 @@ CROP_SPECIES = {
                     "Mandya",
                     "Uttara Kannada"
                 ],
-                "image_url": "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=700&q=80"
+                "image_url": "/coconut.jpg"
             },
             {
                 "name": "Chowghat Orange Dwarf",
@@ -1347,7 +1347,7 @@ CROP_SPECIES = {
                     "Mandya",
                     "Uttara Kannada"
                 ],
-                "image_url": "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=700&q=80"
+                "image_url": "/coconut.jpg"
             },
             {
                 "name": "Tiptur Tall",
@@ -1381,7 +1381,7 @@ CROP_SPECIES = {
                     "Mandya",
                     "Uttara Kannada"
                 ],
-                "image_url": "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=700&q=80"
+                "image_url": "/coconut.jpg"
             },
             {
                 "name": "Lakshadweep Micro Tall",
@@ -1415,7 +1415,7 @@ CROP_SPECIES = {
                     "Mandya",
                     "Uttara Kannada"
                 ],
-                "image_url": "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=700&q=80"
+                "image_url": "/coconut.jpg"
             },
             {
                 "name": "Gangabondam (Hybrid)",
@@ -1449,7 +1449,7 @@ CROP_SPECIES = {
                     "Mandya",
                     "Uttara Kannada"
                 ],
-                "image_url": "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=700&q=80"
+                "image_url": "/coconut.jpg"
             },
             {
                 "name": "Kera Sankara (D x T)",
@@ -1483,7 +1483,7 @@ CROP_SPECIES = {
                     "Mandya",
                     "Uttara Kannada"
                 ],
-                "image_url": "https://images.unsplash.com/photo-1544376798-89aa6b82c6cd?auto=format&fit=crop&w=700&q=80"
+                "image_url": "/coconut.jpg"
             }
         ]
     },

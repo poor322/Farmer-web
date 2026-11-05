@@ -68,7 +68,7 @@ class TestModels:
         """Valid RegistrationRequest should pass."""
         req = RegistrationRequest(
             name="Test",
-            aadhaar_number="123456789012", survey_number="100/A",
+            current_crop="Rice", survey_number="100/A",
             phone_number="9876543210",
             state="Karnataka",
             district="Dakshina Kannada",
@@ -85,7 +85,7 @@ class TestModels:
         """land_area_acres and guntas should default to 0.0."""
         req = RegistrationRequest(
             name="Test",
-            aadhaar_number="123456789012", survey_number="100/A",
+            current_crop="Rice", survey_number="100/A",
             phone_number="9876543210",
             state="Karnataka",
             district="Dakshina Kannada",
@@ -109,7 +109,7 @@ class TestModels:
         with pytest.raises(ValidationError):
             RegistrationRequest(
                 name="Test",
-                # aadhaar_number missing
+                # required field missing
                 phone_number="9876543210",
                 state="Karnataka",
                 district="DK",
@@ -265,7 +265,7 @@ class TestRegistrationEndpoint:
     def test_register_success(self):
         payload = {
             "name": "TestFarmer99",
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0000000000",
             "state": "Karnataka",
             "district": "Dakshina Kannada",
@@ -291,7 +291,7 @@ class TestLoginEndpoint:
     def _register_test_user(self):
         client.post("/register", json={
             "name": "TestFarmer99",
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0000000000",
             "state": "Karnataka",
             "district": "Dakshina Kannada",
@@ -329,7 +329,7 @@ class TestFarmerInfoEndpoint:
         # Register first
         client.post("/register", json={
             "name": "TestFarmer99",
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0000000000",
             "state": "Karnataka",
             "district": "Dakshina Kannada",
@@ -610,7 +610,7 @@ class TestInvalidRegistration:
         """Passing a string for land_area_acres should return 422."""
         payload = {
             "name": "TestFarmer99",
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0000000000",
             "state": "Karnataka",
             "district": "DK",
@@ -628,7 +628,7 @@ class TestInvalidRegistration:
         but is logically invalid â€” verifying the API doesn't crash."""
         payload = {
             "name": "TestFarmer99",
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0000000000",
             "state": "Karnataka",
             "district": "DK",
@@ -646,7 +646,7 @@ class TestInvalidRegistration:
         """Extra fields should be ignored, registration should succeed."""
         payload = {
             "name": "TestFarmer99",
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0000000000",
             "state": "Karnataka",
             "district": "DK",
@@ -663,7 +663,7 @@ class TestInvalidRegistration:
         """Empty strings for required fields â€” Pydantic allows empty str."""
         payload = {
             "name": "",
-            "aadhaar_number": "", "survey_number": "",
+            "current_crop": "Rice", "survey_number": "",
             "phone_number": "",
             "state": "",
             "district": "",
@@ -679,7 +679,7 @@ class TestInvalidRegistration:
         """Names with special characters should not crash the API."""
         payload = {
             "name": "TestFarmer99",
-            "aadhaar_number": "!@#$%^&*()", "survey_number": "!@#$%^&*()",
+            "current_crop": "Rice", "survey_number": "!@#$%^&*()",
             "phone_number": "abc-def-ghi",
             "state": "<script>alert('xss')</script>",
             "district": "DK'; DROP TABLE farmers;--",
@@ -695,7 +695,7 @@ class TestInvalidRegistration:
         """Extremely long input should not crash the server."""
         payload = {
             "name": "TestFarmer99",
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0" * 1000,
             "state": "K" * 5000,
             "district": "DK",
@@ -710,7 +710,7 @@ class TestInvalidRegistration:
         """Null for required string fields should return 422."""
         payload = {
             "name": None,
-            "aadhaar_number": "123456789012", "survey_number": "999/T",
+            "current_crop": "Rice", "survey_number": "999/T",
             "phone_number": "0000000000",
             "state": "Karnataka",
             "district": "DK",
